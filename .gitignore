@@ -3,3 +3,4 @@
 /data_for_parse.json
 /venv
 /.idea
+/__pycache__
