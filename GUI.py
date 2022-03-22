@@ -9,7 +9,10 @@ import multiprocessing
 from GSI import server
 import time
 from data_process import DataProcessor
-
+"""
+The simplest UI at the moment, just to create the basic options needed to further develop other features. Wanted 
+to do it right away, so I dont have to change too much or anything in other classes later on
+"""
 
 class GUI:
     def __init__(self):

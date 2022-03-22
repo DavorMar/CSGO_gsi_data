@@ -4,6 +4,10 @@ import json
 
 from GSI import payloadparser
 
+"""
+Server code mostly taken from https://github.com/Erlendeikeland/csgo-gsi-python, with a few tweaks.
+"""
+
 class GSIServer(HTTPServer):
     def __init__(self, server_address, auth_token):
         super(GSIServer, self).__init__(server_address, RequestHandler)

@@ -1,5 +1,8 @@
 import time
 
+"""
+Dispatching data into multiple classes for easier calls 
+"""
 class PayloadParser:
     def __init__(self):
         self.game_state = False
@@ -16,6 +19,7 @@ class PayloadParser:
     def parse_data(self, payload):
         self.payload = payload
         try:
+            self.player_data = Player(payload[""])
             self.all_players_data = AllPlayers(payload["allplayers"])
             self.map_data = Map(payload["map"])
             self.round_data = Round(payload["round"])
@@ -60,25 +64,25 @@ class AllPlayers:
 
         for player, data in self.data.items():
             if data["observer_slot"] == 0:
-                self.player_0 = data
+                self.player_0 = Player(data)
             elif data["observer_slot"] == 1:
-                self.player_1 = data
+                self.player_1 = Player(data)
             elif data["observer_slot"] == 2:
-                self.player_2 = data
+                self.player_2 = Player(data)
             elif data["observer_slot"] == 3:
-                self.player_3 = data
+                self.player_3 = Player(data)
             elif data["observer_slot"] == 4:
-                self.player_4 = data
+                self.player_4 = Player(data)
             elif data["observer_slot"] == 5:
-                self.player_5 = data
+                self.player_5 = Player(data)
             elif data["observer_slot"] == 6:
-                self.player_6 = data
+                self.player_6 = Player(data)
             elif data["observer_slot"] == 7:
-                self.player_7 = data
+                self.player_7 = Player(data)
             elif data["observer_slot"] == 8:
-                self.player_8 = data
+                self.player_8 = Player(data)
             elif data["observer_slot"] == 9:
-                self.player_9 = data
+                self.player_9 = Player(data)
 
 class Player:
     def __init__(self, player_data):
