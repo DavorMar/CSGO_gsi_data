@@ -5,3 +5,4 @@
 /.idea
 /__pycache__
 /jupyter-tests.ipynb
+/.ipynb_checkpoints

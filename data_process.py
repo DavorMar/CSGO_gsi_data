@@ -29,7 +29,7 @@ class DataProcessor:
     def process_data(self,data):
         self.data = data
         self.total.write_data(data)
-        self.matches.write_data(data)
+        self.matches.write_data(data, self.total.last_match)
         self.rounds.write_data(data)
         self.players.write_data(data)
         self.grenades.write_data(data)
@@ -68,8 +68,9 @@ class TotalData:
 
         try:
             last_data = self.df.iloc[-1]
-            last_match = self.df.iloc[-1,self.df.columns.get_loc("match")]
-            match_number = last_match + 1
+            self.last_match = self.df.iloc[-1,self.df.columns.get_loc("match")]
+
+            match_number = self.last_match + 1
         except IndexError:
             match_number = 1
             last_data = {"provider_id":None, "all_players": None, "map": None}
@@ -102,6 +103,22 @@ class TotalData:
             else:
                 pass
 
+
+
+class MatchData:
+    def __init__(self, main_folder):
+        self.folder = fr"projects\{main_folder}\matches_data"
+
+    def write_data(self, data, match_number):
+        current_game_id = match_number
+        self.file = fr"{self.folder}\match_{current_game_id}.csv"
+        try:
+            self.df = pd.read_csv(self.file)
+        except FileNotFoundError:
+            self.df = pd.DataFrame(
+                columns=["round","round_win_team", "round_win_type", "round_win_players", "start_time", "end_time"],index = None)
+
+
 class RoundData:
     def __init__(self, main_folder):
         self.folder = fr"projects\{main_folder}\rounds_data"
@@ -109,16 +126,9 @@ class RoundData:
     def write_data(self, data):
         pass
 
-class MatchData:
-    def __init__(self, main_folder):
-        self.folder = fr"projects\{main_folder}\matches_data"
-
-    def write_data(self, data):
-        pass
-
 class PlayerData:
     def __init__(self, main_folder):
-        self.df = fr"projects\{main_folder}\players_data"
+        self.folder = fr"projects\{main_folder}\players_data"
 
     def write_data(self, data):
         pass
