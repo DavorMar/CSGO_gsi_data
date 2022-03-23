@@ -12,7 +12,8 @@ gsi_server.start_server()
 
 data = gsi_server.get_data()
 if data.game_state:
-    print(data.map_data.round_wins)
+    for name, value in data.all_players_data.all_players_dict.items():
+        print(value[1])
 else:
     print("Game is not started yet")
 time.sleep(2)

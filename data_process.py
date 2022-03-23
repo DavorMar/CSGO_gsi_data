@@ -2,21 +2,12 @@ import numpy as np
 import pandas as pd
 import time
 import os
+from datetime import date, datetime
 
 class DataProcessor:
     def __init__(self,folder):
-        self.main_folder = folder
-        try:
-            self.total_data_df = pd.read_csv(fr"{self.main_folder}\total_data.csv")
-        except FileNotFoundError:
-            self.total_data_df = pd.DataFrame(
-                columns=["match", "team_1", "team_2", "winning team", "score", "start_time", "end_time", "map" "date"])
-        try:
-            self.grenades_data_csv = pd.read_csv(fr"{self.main_folder}\grenades_data.csv")
-        except FileNotFoundError:
-            self.grenades_data_csv = pd.DataFrame(
-                columns=["grenade_no", "round_id", "match_id", "type", "start_position",
-                         "end_position", "map", "by_player", "start_time", "end_time"])
+
+        self.main_folder = fr"projects\{folder}"
 
         self.matches_data_folder = fr"projects\{folder}\matches_data"
         self.rounds_data_folder = fr"projects\{folder}\rounds_data"
@@ -27,34 +18,122 @@ class DataProcessor:
             os.mkdir(self.rounds_data_folder)
             os.mkdir(self.players_data_folder)
 
+        self.total = TotalData(self.main_folder)
+        self.matches = MatchData(self.main_folder)
+        self.rounds = RoundData(self.main_folder)
+        self.players = PlayerData(self.main_folder)
+        self.grenades = GrenadesData(self.main_folder)
+
+
 
     def process_data(self,data):
         self.data = data
+        self.total.write_data(data)
+        self.matches.write_data(data)
+        self.rounds.write_data(data)
+        self.players.write_data(data)
+        self.grenades.write_data(data)
 
-    def write_total_data(self):
+
+
+
+class TotalData:
+    def __init__(self, main_folder):
+        self.file = fr"{main_folder}\total_data.csv"
+        try:
+            self.df = pd.read_csv(self.file)
+        except FileNotFoundError:
+            self.df = pd.DataFrame(
+                columns=["match","provider_id", "all_players", "winning_team", "map", "start_time", "end_time", "date"],index = None)
+
+    def check_game_phase(self):
+        ct_score = self.data.map_data.team_ct["score"]
+        t_score = self.data.map_data.team_t["score"]
+        if ct_score == 16 or t_score == 16 or (t_score == 15 and ct_score == 15):
+            game_active = False
+        else:
+            game_active = True
+        return game_active
+
+
+    def write_data(self, data):
+        self.data = data
+        today = date.today()
+        today_pretty_written = today.strftime("%d/%m/%Y")
+        time_now = datetime.now()
+        current_time = time_now.strftime("%H:%M:%S")
+        player_list = []
+        for name, value in self.data.all_players_data.all_players_dict.items():
+            player_list.append(value[1])
+
+        try:
+            last_data = self.df.iloc[-1]
+            last_match = self.df.iloc[-1,self.df.columns.get_loc("match")]
+            match_number = last_match + 1
+        except IndexError:
+            match_number = 1
+            last_data = {"provider_id":None, "all_players": None, "map": None}
+        if self.check_game_phase():
+            data_to_write = {"match": match_number ,"provider_id": data.provider_data.steamid,
+                             "all_players": player_list, "map": data.map_data.name,
+                             "start_time": current_time, "end_time": "x", "date": today_pretty_written}
+            if (last_data["provider_id"] == data_to_write["provider_id"] and
+                    last_data["all_players"] == data_to_write["all_players"]
+                    and last_data["map"] == data_to_write["map"]) \
+                    or len(data_to_write["all_players"]) != 10:
+                pass
+            else:
+                self.df = self.df.append(data_to_write, ignore_index = True)
+                self.df.to_csv(self.file, index = False)
+                print("Written new game")
+        else:
+            if self.df.iloc[-1, self.df.columns.get_loc("end_time")] == "x":
+                self.df.iloc[-1, self.df.columns.get_loc("end_time")] = current_time
+                ct_score = self.data.map_data.team_ct["score"]
+                t_score = self.data.map_data.team_t["score"]
+                if ct_score == 16:
+                    self.df.iloc[-1, self.df.columns.get_loc("winning_team")] = "CT"
+                elif t_score == 16:
+                    self.df.iloc[-1, self.df.columns.get_loc("winning_team")] = "T"
+                else:
+                    self.df.iloc[-1, self.df.columns.get_loc("winning_team")] = "draw"
+                self.df.to_csv(self.file, index=False)
+                print("Written end of game")
+            else:
+                pass
+
+class RoundData:
+    def __init__(self, main_folder):
+        self.folder = fr"projects\{main_folder}\rounds_data"
+
+    def write_data(self, data):
         pass
 
+class MatchData:
+    def __init__(self, main_folder):
+        self.folder = fr"projects\{main_folder}\matches_data"
 
+    def write_data(self, data):
+        pass
 
-# class TotalData:
-#     def __init__(self, data, main_folder):
-#
-#
-# class RoundData:
-#     def __init__(self, data, main_folder):
-#         pass
-#
-# class MatchData:
-#     def __init__(self, data, main_folder):
-#         pass
-#
-# class PlayerData:
-#     def __init__(self, data, main_folder):
-#         pass
-#
-# class GrenadesData:
-#     def __init__(self, data, main_folder):
-#         pass
+class PlayerData:
+    def __init__(self, main_folder):
+        self.df = fr"projects\{main_folder}\players_data"
+
+    def write_data(self, data):
+        pass
+
+class GrenadesData:
+    def __init__(self, main_folder):
+        try:
+            self.df = pd.read_csv(fr"{main_folder}\grenades_data.csv")
+        except FileNotFoundError:
+            self.df = pd.DataFrame(
+                columns=["grenade_no", "round_id", "match_id", "type", "start_position",
+                         "end_position", "map", "by_player", "start_time", "end_time"])
+
+    def write_data(self, data):
+        pass
 
 
 

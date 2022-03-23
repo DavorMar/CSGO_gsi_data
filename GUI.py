@@ -9,6 +9,7 @@ import multiprocessing
 from GSI import server
 import time
 from data_process import DataProcessor
+import sys
 """
 The simplest UI at the moment, just to create the basic options needed to further develop other features. Wanted 
 to do it right away, so I dont have to change too much or anything in other classes later on
@@ -73,14 +74,15 @@ class GUI:
 def fetch_data(project_name):
     gsi_server = server.GSIServer(("localhost", 3000), "S8RL9Z6Y22TYQK45JB4V8PHRJJMD9DS9")
     gsi_server.start_server()
-
+    print("Start")
+    sys.stdout.flush()
     data_processor = DataProcessor(project_name)
     while True:
+        sys.stdout.flush()
         data = gsi_server.get_data()
+        sys.stdout.flush()
         if data.game_state:
-            print(len(data.payload))
             data_processor.process_data(data)
-            print(data_processor.name, data.provider_data.data)
             time.sleep(1)
             # print(data.all_players_data.player_0["name"])
             # print(data.all_players_data.player_5["name"])
