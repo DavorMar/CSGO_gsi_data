@@ -51,7 +51,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             self.server.running = True
 
-        if len(payload) <= 8:
+        if len(payload) <5:
             self.server.parser.empty_data()
         else:
             self.server.parser.parse_data(payload)

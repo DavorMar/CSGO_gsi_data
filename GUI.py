@@ -1,10 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import tkinter.filedialog
-from shutil import copy2, rmtree
-import json
 import os
-import pandas
 import multiprocessing
 from GSI import server
 import time
@@ -83,7 +80,7 @@ def fetch_data(project_name):
         sys.stdout.flush()
         if data.game_state:
             data_processor.process_data(data)
-            time.sleep(1)
+            time.sleep(0.1)
             # print(data.all_players_data.player_0["name"])
             # print(data.all_players_data.player_5["name"])
         else:

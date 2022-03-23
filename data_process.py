@@ -1,6 +1,4 @@
-import numpy as np
 import pandas as pd
-import time
 import os
 from datetime import date, datetime
 
@@ -30,7 +28,7 @@ class DataProcessor:
         self.data = data
         self.total.write_data(data)
         self.matches.write_data(data, self.total.last_match)
-        self.rounds.write_data(data)
+        self.rounds.write_data(data, self.matches.current_round, self.total.last_match)
         self.players.write_data(data)
         self.grenades.write_data(data)
 
@@ -73,6 +71,7 @@ class TotalData:
             match_number = self.last_match + 1
         except IndexError:
             match_number = 1
+            self.last_match = 1
             last_data = {"provider_id":None, "all_players": None, "map": None}
         if self.check_game_phase():
             data_to_write = {"match": match_number ,"provider_id": data.provider_data.steamid,
@@ -107,7 +106,7 @@ class TotalData:
 
 class MatchData:
     def __init__(self, main_folder):
-        self.folder = fr"projects\{main_folder}\matches_data"
+        self.folder = fr"{main_folder}\matches_data"
 
     def write_data(self, data, match_number):
         current_game_id = match_number
@@ -116,14 +115,53 @@ class MatchData:
             self.df = pd.read_csv(self.file)
         except FileNotFoundError:
             self.df = pd.DataFrame(
-                columns=["round","round_win_team", "round_win_type", "round_win_players", "start_time", "end_time"],index = None)
+                columns=["round","round_win_team", "round_win_type",
+                         "round_win_players", "start_time", "end_time"],index = None)
+
+        time_now = datetime.now()
+        current_time = time_now.strftime("%H:%M:%S")
+        current_round = data.map_data.round + 1
+
+        try:
+            last_round = self.df.iloc[-1, self.df.columns.get_loc("round")]
+        except IndexError:
+            last_round = 0
+        print(last_round,current_round)
+        self.current_round = current_round
+        if data.round_data.phase != "over" and last_round != current_round:
+            data_to_write = {"round": current_round, "round_win_players": [], "start_time": current_time, "end_time": "x"}
+            print("New round")
+            self.df = self.df.append(data_to_write, ignore_index= True)
+            self.df.to_csv(self.file, index=False)
+
+        elif last_round == current_round-1:
+            if data.round_data.phase == "over" and self.df.iloc[-1, self.df.columns.get_loc("end_time")] == "x":
+                win_team = data.round_data.data["win_team"]
+                winning_players = []
+                for player, value in data.all_players_data.data.items():
+                    if value["team"] == win_team:
+                        winning_players.append(player)
+
+                try:
+                    bomb_status = data.round_data.data["bomb"]
+                except KeyError:
+                    bomb_status = "elimination/time"
+
+
+                self.df.iloc[-1, self.df.columns.get_loc("round_win_team")] = win_team
+                self.df.iloc[-1, self.df.columns.get_loc("round_win_players")] = str(winning_players)
+                self.df.iloc[-1, self.df.columns.get_loc("end_time")] = current_time
+                self.df.iloc[-1, self.df.columns.get_loc("round_win_type")] = bomb_status
+                print("End round")
+                self.df.to_csv(self.file, index=False)
+
 
 
 class RoundData:
     def __init__(self, main_folder):
         self.folder = fr"projects\{main_folder}\rounds_data"
 
-    def write_data(self, data):
+    def write_data(self, data, current_round, current_match):
         pass
 
 class PlayerData:
