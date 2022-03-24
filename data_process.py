@@ -2,6 +2,8 @@ import pandas as pd
 import os
 from datetime import date, datetime
 
+
+
 class DataProcessor:
     def __init__(self,folder):
 
@@ -126,7 +128,6 @@ class MatchData:
             last_round = self.df.iloc[-1, self.df.columns.get_loc("round")]
         except IndexError:
             last_round = 0
-        print(last_round,current_round)
         self.current_round = current_round
         if data.round_data.phase != "over" and last_round != current_round:
             data_to_write = {"round": current_round, "round_win_players": [], "start_time": current_time, "end_time": "x"}
@@ -159,14 +160,65 @@ class MatchData:
 
 class RoundData:
     def __init__(self, main_folder):
-        self.folder = fr"projects\{main_folder}\rounds_data"
+        self.folder = fr"{main_folder}\matches_data"
+        self.data_written = False  # check if first segment of data is written, at the beginning of the round
 
     def write_data(self, data, current_round, current_match):
-        pass
+        if data.round_data.phase == "over":
+            current_round -= 1
+        else:
+            pass
+
+
+        if os.path.exists(fr"{self.folder}\match_{current_match}"):
+            pass
+        else:
+            os.mkdir(fr"{self.folder}\match_{current_match}")
+        self.file = fr"{self.folder}\match_{current_match}\round_{current_round}.csv"
+        try:
+            self.df = pd.read_csv(self.file)
+        except:
+            self.df = pd.DataFrame(
+                columns=["player_id", "weapons", "armor", "helmet", "team", "kills", "hs_kills", "assists", "total_dmg",
+                         "equip_value", "money"], index=None)
+        if data.round_data.phase == "live" and self.data_written is False:
+            for player, values in data.all_players_data.all_players_dict.items():
+                player_data = values[0]
+                player_id = values[1]
+                weapon_list = []
+                l_armor = lambda x: True if x > 20 else False
+                for weapon_slot, weapon_data in player_data.weapons.items():
+                    weapon_list.append(weapon_data["name"])
+                data_to_write = {"player_id" : player_id, "weapons": str(weapon_list), "armor" : l_armor(player_data.armor),
+                                 "helmet" : player_data.helmet, "team" : player_data.team, "kills": "x",
+                                 "hs_kills": "y", "equip_value": player_data.equip_value, "money": player_data.money}
+                self.df = self.df.append(data_to_write, ignore_index = True)
+                # self.df.set_index("player_id", inplace=True)
+                self.df.to_csv(self.file)
+                self.data_written = True
+            print(f"Written round start player info")
+
+        elif data.round_data.phase == "over" and self.data_written:
+            # for (player,values),(index,row) in zip(data.all_players_data.all_players_dict.items(),self.df.iterrows()):
+            self.df.set_index("player_id", inplace=True)
+            for player, values in data.all_players_data.all_players_dict.items():
+                player_data = values[0]
+                player_id = int(values[1])
+
+                self.df.at[player_id, "kills"] = player_data.round_kills
+                self.df.at[player_id, "hs_kills"] = player_data.round_killhs
+                self.df.at[player_id, "total_dmg"] = player_data.round_totaldmg
+                self.df.to_csv(self.file)
+                self.data_written = False
+            print("Written round end player info")
+
+
+
+
 
 class PlayerData:
     def __init__(self, main_folder):
-        self.folder = fr"projects\{main_folder}\players_data"
+        self.folder = fr"{main_folder}\players_data"
 
     def write_data(self, data):
         pass

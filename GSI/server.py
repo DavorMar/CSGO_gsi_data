@@ -51,7 +51,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             self.server.running = True
 
-        if len(payload) <5:
+        if len(payload) <5 or payload["phase_countdowns"]["phase"] == "warmup" or "round" not in payload:
             self.server.parser.empty_data()
         else:
             self.server.parser.parse_data(payload)

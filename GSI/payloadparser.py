@@ -33,7 +33,7 @@ class PayloadParser:
 class Map:
     def __init__(self, map_data):
         self.data = map_data
-        self.round_wins = self.data["round_wins"]#dictionary of rounds
+        # self.round_wins = self.data["round_wins"]#dictionary of rounds
         self.mode = self.data["mode"]
         self.name = self.data["name"]
         self.phase = self.data["phase"]
@@ -83,6 +83,7 @@ class Player:
         self.round_killhs = self.state["round_killhs"]
         self.round_totaldmg = self.state["round_totaldmg"]
         self.equip_value = self.state["equip_value"]
+        self.weapons = self.data["weapons"]
         # if self.team == "CT":
         #     self.defusekit = self.state["defusekit"]
         # else:

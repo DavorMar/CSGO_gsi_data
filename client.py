@@ -12,7 +12,8 @@ gsi_server.start_server()
 while True:
     data = gsi_server.get_data()
     if data.game_state:
-        print(data.map_data.round)
-
+        print(data.payload)
+        time.sleep(2)
     else:
         print("Game is not started yet")
+        time.sleep(2)
