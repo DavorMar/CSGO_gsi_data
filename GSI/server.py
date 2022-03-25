@@ -22,8 +22,8 @@ class GSIServer(HTTPServer):
             thread = Thread(target=self.serve_forever)
             thread.start()
             first_time = True
-            while self.running == False:
-                if first_time == True:
+            while not self.running:
+                if first_time:
                     print("CS:GO GSI Server starting..")
                 first_time = False
         except:
@@ -40,10 +40,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         body = self.rfile.read(length).decode("utf-8")
 
         payload = json.loads(body)
-
-        with open ("data_for_parse.json", "w") as file:
-            json.dump(payload,file)
-
 
         if not self.authenticate_payload(payload):
             print("auth_token does not match.")

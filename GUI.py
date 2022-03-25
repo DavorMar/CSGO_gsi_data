@@ -7,10 +7,12 @@ from GSI import server
 import time
 from data_process import DataProcessor
 import sys
+
 """
 The simplest UI at the moment, just to create the basic options needed to further develop other features. Wanted 
 to do it right away, so I dont have to change too much or anything in other classes later on
 """
+
 
 class GUI:
     def __init__(self):
@@ -43,7 +45,6 @@ class GUI:
         self.new_project_frame.destroy()
         self.loaded_project(project_name)
 
-
     def select_folder(self):
         self.directory = ""
         foldername = tkinter.filedialog.askdirectory(initialdir=r"projects", title="Select a folder")
@@ -51,19 +52,16 @@ class GUI:
         self.start_frame.destroy()
         self.loaded_project(self.directory)
 
-    def loaded_project(self,project_name):
+    def loaded_project(self, project_name):
         self.start_frame.destroy()
         self.project_name = project_name
         self.load_project_frame = LabelFrame(self.root, text=f"Project {project_name}")
         self.load_project_frame.grid(row=1, column=0, rowspan=2, sticky=NSEW)
         scan_button = Button(self.load_project_frame, text="Start scan",
-                                     command=self.start_scan)
+                             command=self.start_scan)
         scan_button.grid(row=0, column=1)
 
-
     def start_scan(self):
-
-
         data_fetching_process = multiprocessing.Process(target=fetch_data, args=(self.project_name,))
         data_fetching_process.start()
 
@@ -81,12 +79,9 @@ def fetch_data(project_name):
         if data.game_state:
             data_processor.process_data(data)
             time.sleep(0.1)
-            # print(data.all_players_data.player_0["name"])
-            # print(data.all_players_data.player_5["name"])
         else:
             print("Game has not started yet")
             time.sleep(2)
-
 
 
 if __name__ == "__main__":
