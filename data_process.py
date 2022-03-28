@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from datetime import date, datetime
+from changes_detector import ChgDetect
 
 
 class DataProcessor:
@@ -21,14 +22,25 @@ class DataProcessor:
         self.rounds = RoundData(self.main_folder)
         self.players = PlayerData(self.main_folder)
         self.grenades = GrenadesData(self.main_folder)
+        self.change_detector = None
 
     def process_data(self, data):
         self.data = data
-        self.total.write_data(data)
-        self.matches.write_data(data, self.total.last_match)
+        change_detector = self.total.write_data(data)
+        if change_detector and change_detector != "Match end":
+            self.change_detector = change_detector
+            self.players.write_new_players(data.all_players_data)
+        elif change_detector == "Match end":
+            self.players.write_new_match(data.all_players_data)
+        else:
+            pass
+        round_end = self.matches.write_data(data, self.total.last_match)
         self.rounds.write_data(data, self.matches.current_round, self.total.last_match)
-        self.players.write_data(data)
+        self.players.write_data(data,  self.change_detector)
         self.grenades.write_data(data, self.matches.current_round, self.total.last_match)
+        if round_end:
+            self.players.write_new_round(data.all_players_data)
+            self.change_detector.bomb_status = False
 
 
 class TotalData:
@@ -77,13 +89,17 @@ class TotalData:
                 last_data["all_players"] == data_to_write["all_players"]
                 and last_data["map"] == data_to_write["map"]) \
                     or len(data_to_write["all_players"]) != 10:
-                pass
-            else:
+                return None
+            else:#NEW MATCH STARTED
+                change_detector = ChgDetect(data.all_players_data)
+
                 self.df = self.df.append(data_to_write, ignore_index=True)
+
                 self.df.to_csv(self.file, index=False)
                 print("Written new game")
+                return change_detector
         else:
-            if self.df.iloc[-1, self.df.columns.get_loc("end_time")] == "x":
+            if self.df.iloc[-1, self.df.columns.get_loc("end_time")] == "x": #MATCH ENDED
                 self.df.iloc[-1, self.df.columns.get_loc("end_time")] = current_time
                 ct_score = self.data.map_data.team_ct["score"]
                 t_score = self.data.map_data.team_t["score"]
@@ -95,8 +111,9 @@ class TotalData:
                     self.df.iloc[-1, self.df.columns.get_loc("winning_team")] = "draw"
                 self.df.to_csv(self.file, index=False)
                 print("Written end of game")
+                return "Match end"
             else:
-                pass
+                return None
 
 
 class MatchData:
@@ -128,6 +145,7 @@ class MatchData:
             print("New round")
             self.df = self.df.append(data_to_write, ignore_index=True)
             self.df.to_csv(self.file, index=False)
+            return None
 
         elif last_round == current_round - 1:
             if data.round_data.phase == "over" and self.df.iloc[-1, self.df.columns.get_loc("end_time")] == "x":
@@ -148,6 +166,7 @@ class MatchData:
                 self.df.iloc[-1, self.df.columns.get_loc("round_win_type")] = bomb_status
                 print("End round")
                 self.df.to_csv(self.file, index=False)
+                return "Round end"
 
 
 class RoundData:
@@ -186,7 +205,7 @@ class RoundData:
                                  "hs_kills": "y", "equip_value": player_data.equip_value, "money": player_data.money}
                 self.df = self.df.append(data_to_write, ignore_index=True)
                 # self.df.set_index("player_id", inplace=True)
-                self.df.to_csv(self.file)
+                self.df.to_csv(self.file, index=False)
                 self.data_written = True
             print(f"Written round start player info")
 
@@ -201,17 +220,63 @@ class RoundData:
                 self.df.at[player_id, "kills"] = player_data.round_kills
                 self.df.at[player_id, "hs_kills"] = player_data.round_killhs
                 self.df.at[player_id, "total_dmg"] = player_data.round_totaldmg
-                self.df.to_csv(self.file)
+                self.df.to_csv(self.file, index=False)
                 self.data_written = False
             print("Written round end player info")
 
 
 class PlayerData:
     def __init__(self, main_folder):
-        self.folder = fr"{main_folder}\players_data"
+        self.file_location = fr"{main_folder}\player_data.csv"
+        try:
+            self.df = pd.read_csv(self.file_location)
+        except FileNotFoundError:
+            self.df = pd.DataFrame(
+                columns=["player_id", "name", "kills", "deaths", "assists", "score", "mvps", "bombs_planted",
+                         "bombs_defused", "games_played", "rounds_played"])
 
-    def write_data(self, data):
-        pass
+
+    def write_data(self, data, change_detector):
+        registered_changes = change_detector.get_changes(data.all_players_data, data.bomb_data)
+
+        for change in registered_changes:
+            player_bool = (self.df["player_id"] == int(change[0]))
+            player_index = self.df[player_bool].index
+            self.df.iloc[player_index, self.df.columns.get_loc(change[1])] += 1
+            self.df.to_csv(self.file_location, index=False)
+
+
+    def write_new_players(self, player_data):
+        for player, values in player_data.all_players_dict.items():
+            player_data = values[0]
+            player_id = int(values[1])
+            exists_check = (self.df["player_id"] == player_id).any()
+            if exists_check:
+                pass
+            else:
+                data_to_write = {"player_id": player_id, "name": player_data.name, "kills": 0, "deaths": 0,
+                                 "assists": 0, "score": 0, "mvps": 0, "bombs_planted": 0, "bombs_defused": 0,
+                                 "games_played": 0, "rounds_played": 0}
+                self.df = self.df.append(data_to_write, ignore_index = True)
+                self.df.to_csv(self.file_location ,index=False)
+
+    def write_new_match(self, player_data):
+        for player, values in player_data.all_players_dict.items():
+            player_data = values[0]
+            player_id = values[1]
+            exists_check = (self.df["player_id"] == player_id)
+            player_index = self.df[exists_check].index
+            self.df.iloc[player_index, self.df.columns.get_loc("games_played")] +=1
+            self.df.to_csv(self.file_location, index=False)
+
+    def write_new_round(self, player_data):
+        for player, values in player_data.all_players_dict.items():
+            player_data = values[0]
+            player_id = values[1]
+            exists_check = (self.df["player_id"] == player_id)
+            player_index = self.df[exists_check].index
+            self.df.iloc[player_index, self.df.columns.get_loc("rounds_played")] += 1
+            self.df.to_csv(self.file_location, index=False)
 
 
 class GrenadesData:
@@ -236,7 +301,7 @@ class GrenadesData:
             if exists_check.any():
                 self.df.iloc[exists_index, self.df.columns.get_loc("end_position")] = grenade_data["position"]
                 self.df.iloc[exists_index, self.df.columns.get_loc("end_time")] = current_time
-                self.df.to_csv(self.file_location)
+                self.df.to_csv(self.file_location, index=False)
             else:
                 if data.round_data.phase == "over":
                     pass
@@ -248,6 +313,6 @@ class GrenadesData:
                                          "map": data.map_data.name,
                                          "start_time": current_time, "end_time": "x"}
                         self.df = self.df.append(data_to_write, ignore_index=True)
-                        self.df.to_csv(self.file_location)
+                        self.df.to_csv(self.file_location,index=False)
                     except KeyError:
                         pass

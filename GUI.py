@@ -80,7 +80,7 @@ def fetch_data(project_name):
             data_processor.process_data(data)
             time.sleep(0.1)
         else:
-            print("Game has not started yet")
+            print("No live game detected")
             time.sleep(2)
 
 

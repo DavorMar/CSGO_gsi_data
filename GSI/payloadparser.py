@@ -11,6 +11,7 @@ class PayloadParser:
         self.grenades_data = None
         self.provider_data = None
         self.len = 0
+        self.bomb_data = None
 
     def empty_data(self):
         self.game_state = False
@@ -22,6 +23,7 @@ class PayloadParser:
         self.all_players_data = AllPlayers(payload["allplayers"])
         self.map_data = Map(payload["map"])
         self.round_data = Round(payload["round"])
+        self.bomb_data = Bomb(payload["bomb"])
 
         self.grenades_data = Grenades(payload["grenades"])
         self.provider_data = Provider(payload["provider"])
@@ -40,6 +42,15 @@ class Map:
         self.round = self.data["round"]
         self.team_ct = self.data["team_ct"]#dictionary[score, timeouts_remaining,
         self.team_t = self.data["team_t"]
+
+class Bomb:
+    def __init__(self, bomb_data):
+        self.data = bomb_data
+        self.state = self.data["state"]
+        try:
+            self.owner = self.data["player"]
+        except KeyError:
+            self.owner = None
 
 class Round:
     def __init__(self,round_data):

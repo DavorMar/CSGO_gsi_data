@@ -12,14 +12,10 @@ all_grenades = []
 while True:
     data = gsi_server.get_data()
     if data.game_state:
-        for grenade,grenade_data in data.grenades_data.data.items():
-            print(grenade_data)
-            try:
-                print(grenade_data["position"])
-            except:
-                print("NO POSITION DATA FOR ", grenade_data)
-                time.sleep(10)
-        time.sleep(0.1)
+        # print(data.all_players_data.data)
+        for player_no, (player_data, player_id) in zip(data.all_players_data.all_players_dict.keys(), data.all_players_data.all_players_dict.values()):
+            print(player_no, type(player_id), player_data.data)
+        time.sleep(5)
     else:
         print("Game is not started yet")
         time.sleep(2)
