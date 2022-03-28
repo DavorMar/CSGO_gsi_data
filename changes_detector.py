@@ -7,11 +7,13 @@ It will serve as a tool to detect changes in player stats, so players table can 
 class ChgDetect:
     def __init__(self, players_data):
         self.player_dict = {}
-        self.bomb_planter = None
-        self.bomb_defuser = None
+        # self.bomb_planter = None
+        # self.bomb_defuser = None
         self.bomb_status = False
         for player_data, player_id in players_data.all_players_dict.values():
-            self.player_dict[f"{player_id}"] = {"kills" : 0, "deaths" : 0 , "assists" : 0, "score" : 0, "mvps" : 0,
+            self.player_dict[f"{player_id}"] = {"kills" : player_data.kills, "deaths" : player_data.deaths,
+                                                "assists" : player_data.assists, "score" : player_data.score,
+                                                "mvps" : player_data.mvps,
                                                 "bombs_planted" : 0, "bombs_defused": 0}
 
 
@@ -29,17 +31,21 @@ class ChgDetect:
 
     def register_bomb_plant_defuse(self, bomb_data):
         list_of_changes = []
-        bomb_state = bomb_data.state
+
+        try:
+            bomb_state = bomb_data.state
+        except:
+            return list_of_changes
 
         if bomb_state == "planting":
-            self.bomb_planter = bomb_data.owner
+            self.bomb_planter = bomb_data.data["player"]
         elif bomb_state == "planted":
             if not self.bomb_status:
                 list_of_changes.append([self.bomb_planter,"bombs_planted"])
                 self.player_dict[f"{self.bomb_planter}"]["bombs_planted"] += 1
                 self.bomb_status = True
         elif bomb_state == "defusing":
-            self.bomb_defuser = bomb_data.owner
+            self.bomb_defuser = bomb_data.data["player"]
         elif bomb_state == "defused":
             if self.bomb_status:
                 list_of_changes.append([self.bomb_defuser, "bombs_defused"])

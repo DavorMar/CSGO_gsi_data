@@ -23,7 +23,10 @@ class PayloadParser:
         self.all_players_data = AllPlayers(payload["allplayers"])
         self.map_data = Map(payload["map"])
         self.round_data = Round(payload["round"])
-        self.bomb_data = Bomb(payload["bomb"])
+        try:
+            self.bomb_data = Bomb(payload["bomb"])
+        except:
+            pass
 
         self.grenades_data = Grenades(payload["grenades"])
         self.provider_data = Provider(payload["provider"])
@@ -47,10 +50,10 @@ class Bomb:
     def __init__(self, bomb_data):
         self.data = bomb_data
         self.state = self.data["state"]
-        try:
-            self.owner = self.data["player"]
-        except KeyError:
-            self.owner = None
+        # try:
+        #     self.owner = self.data["player"]
+        # except KeyError:
+        #     self.owner = None
 
 class Round:
     def __init__(self,round_data):

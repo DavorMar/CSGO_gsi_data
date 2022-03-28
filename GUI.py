@@ -81,6 +81,7 @@ def fetch_data(project_name):
             time.sleep(0.1)
         else:
             print("No live game detected")
+            data_processor.total.program_restart = True
             time.sleep(2)
 
 
